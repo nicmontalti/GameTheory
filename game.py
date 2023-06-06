@@ -127,7 +127,7 @@ def play_for_given_T(T, game):
 
 def alpha_eps():
     iterations = 10
-    Ts = np.linspace(1.1, 1.9, 10)
+    Ts = np.linspace(1.1, 1.9, 9)
     games = ['pd', 'opd', 'pdpa']
 
     result = []
@@ -150,19 +150,23 @@ def alpha_eps():
             ATmean.append(np.mean(As))
             epsTstd.append(np.std(epss))
             ATstd.append(np.std(As))
-        result.append([epsTmean, epsTstd, ATmean, ATstd])
+        result.append([epsTmean, epsTstd, ATmean, ATstd, Ts])
 
         timestr = time.strftime("%Y%m%d-%H%M%S")
-        np.save('data/alpha_eps-'+timestr)
+    np.save('data/alpha_eps-'+timestr, result)
 
 
-def evolution(game, noise=0, time=100, plot=False):
+def evolution(game, noise=0, time=100, plot=False, TT=None):
     # definition of matrix of players and probability of abstention
     G0 = np.random.randint(0, 2, (M, N))
 
     global T, R, S, P, L
+    if TT is None:
+        T, R, S, P, L = game_choice(game)
+    else:
+        _, R, S, P, L = game_choice(game)
+        T = TT
 
-    T, R, S, P, L = game_choice(game)
     A0 = abstein_choice(game)
 
     G = G0.copy()
@@ -225,7 +229,15 @@ def get_histo(G, A):
             num_alpha[0] -= np.sum(G == 0)
             num_alpha2[0] -= np.sum(G == 0)
 
-    return num_alpha / (M*N), num_alpha2 / (M*N)
+    alpha_mean_def = np.mean(A[G.astype(bool)])
+    alpha_mean_coop = np.mean(A[np.logical_not(G.astype(bool))])
+    # alpha_std_def = np.std(A[G.astype(bool)])
+    # alpha_std_coop = np.std(A[np.logical_not(G.astype(bool))])
+
+    ratio_mean = alpha_mean_coop / alpha_mean_def
+    # ratio_std = np.sqrt((alpha_std_coop / alpha_mean_coop) ** 2 + (alpha_std_def / alpha_mean_def)**2) * ratio_mean
+
+    return num_alpha / (M*N), num_alpha2 / (M*N), ratio_mean
     # print histo
     # alphas_edges = alphas - 0.125/2
     # alphas_edges = np.append(alphas_edges, [alphas_edges[-1] + 0.125])
@@ -237,14 +249,14 @@ def get_histo(G, A):
     # fig.savefig('histo.pdf')
 
 
-def save_histo(game, noise=0.0, time=100, n=10):
+def save_histo(game, noise=0.0, t=100, n=10):
     G, A = np.empty((M, N)), np.empty((M, N))
     stat_alpha1 = np.empty((n, 9))
     stat_alpha2 = np.empty((n, 9))
 
     for i in range(n):
-        G, A = evolution(game, noise, time, plot=False)
-        stat_alpha1[i, :], stat_alpha2[i, :] = get_histo(G, A)
+        G, A = evolution(game, noise, t, plot=False)
+        stat_alpha1[i, :], stat_alpha2[i, :], _ = get_histo(G, A)
 
     mean_1 = np.mean(stat_alpha1, axis=0)
     mean_2 = np.mean(stat_alpha2, axis=0)
@@ -257,23 +269,49 @@ def save_histo(game, noise=0.0, time=100, n=10):
     np.save('data/alpha-'+timestr, save)
 
 
+def save_ratio_mean(game='pdpa', noise=0, t=200):
+    iterations = 10
+    Ts = np.linspace(1.1, 1.9, 9)
+
+    result = []
+
+    global T
+    for T in Ts:
+        ratio_means_iter = []
+        # alpha_stds_iter = []
+        for i in range(iterations):
+            G, A = evolution(game, noise=noise, time=t, plot=False, TT=T)
+            _, _, mean = get_histo(G, A)
+            ratio_means_iter.append(mean)
+            # alpha_stds_iter.append(std)
+        # alpha_mean_T = np.sum(
+        #    alpha_means_iter / np.array(alpha_stds_iter)**2) / np.sum(1/np.array(alpha_stds_iter)**2)
+        # alpha_std_T = np.sqrt(1 / np.sum(1/np.array(alpha_means_iter)**2))
+        ratio_mean_T = np.mean(ratio_means_iter)
+        result.append([ratio_mean_T,  T])
+
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    np.save('data/alpha_mean-'+timestr, result)
+
+
 def game_choice(game):
     L = 0
     if game == 'pd' or game == 'opd' or game == 'pdpa':
-        T = 1.2
+        T = 1.5
         R = 1
         S = 0
-        P = 0.2
+        P = 0.3
         L = 0.4
 
     elif game == 'sd' or game == 'osd' or game == 'sdpa':
-        T = 1.2
+        T = 1.4
         R = 1
         S = 0.2
         P = 0.
         L = 0.4
 
     elif game == 'sh':
+
         T = 8
         R = 1
         P = 5
@@ -283,6 +321,8 @@ def game_choice(game):
 
 
 if __name__ == '__main__':
-    # save_histo(game, noise, time, n=10)
+    save_histo('pdpa', noise=0.001, t=200, n=10)
+
     # alpha_eps()
-    evolution('sd', noise=0.001, time=200, plot=True)
+
+    # save_ratio_mean()
