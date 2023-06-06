@@ -1,5 +1,5 @@
 import numpy as np
-from Game import Game
+from game import Game
 
 
 def alpha_eps(Ts, params, iterations=10):
