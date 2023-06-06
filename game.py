@@ -26,7 +26,7 @@ class Game():
         if game == 'pd' or game == 'sd':
             A0 = np.zeros((self.M, self.N))
         elif game == 'pdpa' or game == 'sdpa':
-            A0 = np.floor(np.random.rand(self.M, self.N) * 8)/8
+            A0 = np.random.randint(0, 8, (self.M, self.N)) / 8
         elif game == 'opd' or game == 'osd':
             A0 = (np.random.rand(self.M, self.N) < 0.5).astype('int')
         else:
@@ -139,3 +139,16 @@ class Game():
                 plt.pause(0.000000000001)
 
         return G, A
+
+if __name__ == '__main__':
+    params = {
+        'T': 1.5,
+        'R': 1,
+        'S': 0,
+        'P': 0.3,
+        'L': 0.4,
+        'noise': 0.001
+    }
+
+    game = Game('pdpa', params)
+    game.evolution(plot=True)
