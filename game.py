@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import random
+import time
 
 M = 50
 N = 50
@@ -29,31 +30,6 @@ def abstein_choice(game):
     return A
 
 # matrix of payoff
-
-
-def game_choice(game):
-    L = 0
-    if game == 'pd' or game == 'opd' or game == 'pdpa':
-        T = 1.8
-        R = 1
-        S = 0
-        P = 0
-        L = 0.4
-
-    elif game == 'sd' or game == 'osd' or game == 'sdpa':
-        T = 4
-        R = 3
-        P = 0
-        S = 2
-        L = 0.4
-
-    elif game == 'sh':
-        T = 8
-        R = 1
-        P = 5
-        S = 1
-
-    return T, R, S, P, L
 
 
 def neumann(i, j):
@@ -149,7 +125,7 @@ def play_for_given_T(T, game):
     return eps_mean, A_mean
 
 
-def figure2():
+def alpha_eps():
     iterations = 10
     Ts = np.linspace(1.1, 1.9, 10)
     games = ['pd', 'opd', 'pdpa']
@@ -176,22 +152,19 @@ def figure2():
             ATstd.append(np.std(As))
         result.append([epsTmean, epsTstd, ATmean, ATstd])
 
-    return np.array(result)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        np.save('data/alpha_eps-'+timestr)
 
 
-def evolution(plot=False):
+def evolution(game, noise=0, time=100, plot=False):
     # definition of matrix of players and probability of abstention
     G0 = np.random.randint(0, 2, (M, N))
-
-    game = 'pdpa'
-    noise = 0.001
 
     global T, R, S, P, L
 
     T, R, S, P, L = game_choice(game)
     A0 = abstein_choice(game)
 
-    time = 200
     G = G0.copy()
     A = A0.copy()
 
@@ -237,44 +210,41 @@ def evolution(plot=False):
     return G, A
 
 
-def get_histo(G, A, game):
+def get_histo(G, A):
     A_1 = A * G
     A_2 = A * (1-G)
 
-# if game is pdpa we have 8 values of alphas
-    if game == 'pdpa':
-        alphas = np.linspace(0, 1, 9)
-        num_alpha = np.zeros(9)
-        num_alpha2 = np.zeros(9)
-        for index, alpha in enumerate(alphas):
-            num_alpha[index] = np.sum(A_1 == alpha)
-            num_alpha2[index] = np.sum(A_2 == alpha)
-            # remove zeros given by the masks
-            if index == 0:
-                num_alpha[0] -= np.sum(G == 0)
-                num_alpha2[0] -= np.sum(G == 0)
+    alphas = np.linspace(0, 1, 9)
+    num_alpha = np.zeros(9)
+    num_alpha2 = np.zeros(9)
+    for index, alpha in enumerate(alphas):
+        num_alpha[index] = np.sum(A_1 == alpha)
+        num_alpha2[index] = np.sum(A_2 == alpha)
+        # remove zeros given by the masks
+        if index == 0:
+            num_alpha[0] -= np.sum(G == 0)
+            num_alpha2[0] -= np.sum(G == 0)
 
-        return num_alpha / (M*N), num_alpha2 / (M*N)
-        # print histo
-        # alphas_edges = alphas - 0.125/2
-        # alphas_edges = np.append(alphas_edges, [alphas_edges[-1] + 0.125])
-        # fig = plt.figure()
-        # ax = fig.add_subplot()
-        # ax.plot(alphas, num_alpha / (M*N), marker='.', color='tab:red')
-        # ax.plot(alphas, num_alpha2 / (M*N), marker='.', color='tab:green')
-        # ax.set_xticks(alphas)
-
-        # fig.savefig('histo.pdf')
+    return num_alpha / (M*N), num_alpha2 / (M*N)
+    # print histo
+    # alphas_edges = alphas - 0.125/2
+    # alphas_edges = np.append(alphas_edges, [alphas_edges[-1] + 0.125])
+    # fig = plt.figure()
+    # ax = fig.add_subplot()
+    # ax.plot(alphas, num_alpha / (M*N), marker='.', color='tab:red')
+    # ax.plot(alphas, num_alpha2 / (M*N), marker='.', color='tab:green')
+    # ax.set_xticks(alphas)
+    # fig.savefig('histo.pdf')
 
 
-def save_histo(n=10):
+def save_histo(game, noise=0.0, time=100, n=10):
     G, A = np.empty((M, N)), np.empty((M, N))
     stat_alpha1 = np.empty((n, 9))
     stat_alpha2 = np.empty((n, 9))
 
     for i in range(n):
-        G, A = evolution(plot=False)
-        stat_alpha1[i, :], stat_alpha2[i, :] = get_histo(G, A, 'pdpa')
+        G, A = evolution(game, noise, time, plot=False)
+        stat_alpha1[i, :], stat_alpha2[i, :] = get_histo(G, A)
 
     mean_1 = np.mean(stat_alpha1, axis=0)
     mean_2 = np.mean(stat_alpha2, axis=0)
@@ -282,28 +252,37 @@ def save_histo(n=10):
     std_2 = np.std(stat_alpha2, axis=0)
 
     save = np.array([mean_1, std_1, mean_2, std_2, np.linspace(0, 1, 9)])
-    np.save('data/alpha', save)
+
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    np.save('data/alpha-'+timestr, save)
+
+
+def game_choice(game):
+    L = 0
+    if game == 'pd' or game == 'opd' or game == 'pdpa':
+        T = 1.2
+        R = 1
+        S = 0
+        P = 0.2
+        L = 0.4
+
+    elif game == 'sd' or game == 'osd' or game == 'sdpa':
+        T = 1.2
+        R = 1
+        S = 0.2
+        P = 0.
+        L = 0.4
+
+    elif game == 'sh':
+        T = 8
+        R = 1
+        P = 5
+        S = 1
+
+    return T, R, S, P, L
 
 
 if __name__ == '__main__':
-    # fig = figure2()
-    # plt.show(block=True)
-    # fig.savefig('alpha_eps.pdf')
-
-    # G, A = evolution(plot=True)
-    # get_histo(G, A, 'pdpa')
-    # plt.show()
-
-    # result = figure2()
-    # np.save('alpha_eps', result)
-
-    save_histo()
-
-
-# axs[0].grid()
-#    axs[1].grid()
-#
-#    axs[0].set_ylabel(r'$\epsilon$')
-#    axs[1].set_ylabel(r'$\alpha$')
-#    # axs[0].set_xlabel('T')
-#    axs[1].set_xlabel('T')
+    # save_histo(game, noise, time, n=10)
+    # alpha_eps()
+    evolution('sd', noise=0.001, time=200, plot=True)
