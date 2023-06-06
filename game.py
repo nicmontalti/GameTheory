@@ -26,7 +26,7 @@ class Game():
         if game == 'pd' or game == 'sd':
             A0 = np.zeros((self.M, self.N))
         elif game == 'pdpa' or game == 'sdpa':
-            A0 = np.random.randint(0, 8, (self.M, self.N)) / 8
+            A0 = np.random.randint(0, 9, (self.M, self.N)) / 8
         elif game == 'opd' or game == 'osd':
             A0 = (np.random.rand(self.M, self.N) < 0.5).astype('int')
         else:
