@@ -51,7 +51,7 @@ def get_histo(G, A):
         # remove zeros given by the masks
         if index == 0:
             num_alpha[0] -= np.sum(G == 0)
-            num_alpha2[0] -= np.sum(G == 0)
+            num_alpha2[0] -= np.sum((1-G) == 0)
 
     alpha_mean_def = np.mean(A[G.astype(bool)])
     alpha_mean_coop = np.mean(A[np.logical_not(G.astype(bool))])
@@ -64,7 +64,7 @@ def get_histo(G, A):
     M = G.shape[0]
     N = G.shape[1]
 
-    return num_alpha / (M*N), num_alpha2 / (M*N), ratio_mean
+    return num_alpha / np.sum(G), num_alpha2 / (np.sum(1-G)), ratio_mean
 
 
 def correlation(params, iterations=10):
